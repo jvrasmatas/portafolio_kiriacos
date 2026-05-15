@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INVESTMENT Kiriacos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: rgba(255,255,255,0.07);
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --accent: #5b8af5;
+    --gold: #f0c040;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+header { padding: 48px 0 32px; border-bottom: 1px solid var(–border); }
+.header-inner { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+.logo { font-family: ‘Syne’, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(–muted); }
+h1 { font-family: ‘Syne’, sans-serif; font-size: clamp(26px, 5vw, 52px); font-weight: 800; line-height: 1; margin-top: 6px; }
+h1 .word-inv { background: linear-gradient(135deg, #fff 40%, #aab4d0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h1 .word-name { color: var(–accent); -webkit-text-fill-color: var(–accent); }
+.header-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.last-update { font-size: 11px; color: var(–muted); line-height: 1.7; }
+#update-time { color: var(–green); font-weight: 500; }
+
+.countdown-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.countdown-ring { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle.bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 3; }
+.countdown-ring circle.prog { fill: none; stroke: var(–green); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.countdown-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; color: var(–green); }
+.countdown-label { font-size: 10px; color: var(–muted); letter-spacing: 0.08em; }
+
+.refresh-btn { display: inline-flex; align-items: center; gap: 7px; background: transparent; border: 1px solid var(–accent); color: var(–accent); font-family: ‘DM Mono’, monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 7px 14px; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.refresh-btn:hover { background: var(–accent); color: #0a0c10; }
+.refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
+#refresh-status { font-size: 10px; color: var(–muted); }
+#refresh-status.ok { color: var(–green); }
+#refresh-status.err { color: var(–red); }
+
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 32px 0; }
+.card { background: var(–surface); border: 1px solid var(–border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; transition: border-color 0.2s; }
+.card:hover { border-color: rgba(255,255,255,0.15); }
+.card::before { content: ‘’; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(–accent); opacity: 0.45; }
+.card-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(–muted); margin-bottom: 8px; }
+.card-value { font-family: ‘Syne’, sans-serif; font-size: 26px; font-weight: 700; }
+.card-sub { font-size: 12px; margin-top: 4px; }
+.pos { color: var(–green); } .neg { color: var(–red); }
+
+.section-title { font-family: ‘Syne’, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(–muted); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.section-title::after { content: ‘’; flex: 1; height: 1px; background: var(–border); }
+
+.charts-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; margin-bottom: 32px; }
+@media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-card { background: var(–surface); border: 1px solid var(–border); border-radius: 12px; padding: 20px; }
+.chart-card h3 { font-family: ‘Syne’, sans-serif; font-size: 12px; font-weight: 600; margin-bottom: 16px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.chart-wrap { position: relative; height: 220px; }
+.growth-card { background: var(–surface); border: 1px solid var(–border); border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+.growth-card h3 { font-family: ‘Syne’, sans-serif; font-size: 12px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; }
+.growth-wrap { position: relative; height: 260px; }
+
+.holdings-grid { display: grid; gap: 10px; margin-bottom: 48px; }
+.holding-row { background: var(–surface); border: 1px solid var(–border); border-radius: 10px; padding: 16px 20px; display: grid; grid-template-columns: 76px 1fr auto auto auto auto auto; align-items: center; gap: 12px; transition: background 0.15s, border-color 0.15s; }
+.holding-row:hover { background: var(–surface2); border-color: rgba(255,255,255,0.1); }
+@media (max-width: 700px) { .holding-row { grid-template-columns: 1fr 1fr; } }
+.ticker-badge { background: var(–surface2); border: 1px solid var(–border); border-radius: 6px; padding: 4px 8px; font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; color: var(–accent); text-align: center; }
+.holding-name { font-size: 12px; color: var(–text); }
+.holding-name small { display: block; color: var(–muted); font-size: 10px; margin-top: 2px; }
+.metric-box { text-align: right; }
+.metric-box .val { font-family: ‘Syne’, sans-serif; font-size: 15px; font-weight: 700; }
+.metric-box .lbl { font-size: 9px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.alloc-badge { background: rgba(91,138,245,0.1); border: 1px solid rgba(91,138,245,0.25); color: var(–accent); font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 20px; min-width: 58px; text-align: center; }
+.edit-btn { background: transparent; border: 1px solid var(–border); color: var(–muted); font-family: ‘DM Mono’, monospace; font-size: 10px; letter-spacing: 0.08em; padding: 5px 10px; border-radius: 5px; cursor: pointer; transition: border-color 0.2s, color 0.2s; white-space: nowrap; }
+.edit-btn:hover { border-color: var(–gold); color: var(–gold); }
+
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(–green); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fade-in { animation: fadeIn 0.4s ease forwards; opacity: 0; }
+@keyframes fadeIn { to { opacity: 1; } }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(6px); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(–surface); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 32px; width: 100%; max-width: 450px; margin: 16px; transform: translateY(20px); transition: transform 0.25s; position: relative; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal::before { content: ‘’; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(–accent), var(–green)); border-radius: 16px 16px 0 0; }
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.modal-title { font-family: ‘Syne’, sans-serif; font-size: 18px; font-weight: 700; }
+.modal-ticker { color: var(–accent); display: block; font-size: 12px; margin-top: 3px; color: var(–muted); }
+.modal-close { background: none; border: none; color: var(–muted); cursor: pointer; font-size: 22px; line-height: 1; padding: 4px; transition: color 0.2s; }
+.modal-close:hover { color: var(–text); }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(–muted); margin-bottom: 6px; display: block; }
+.form-input { width: 100%; background: var(–surface2); border: 1px solid var(–border); color: var(–text); font-family: ‘DM Mono’, monospace; font-size: 14px; padding: 10px 14px; border-radius: 8px; outline: none; transition: border-color 0.2s; }
+.form-input:focus { border-color: var(–accent); }
+.form-hint { font-size: 10px; color: var(–muted); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.btn-save { flex: 1; background: var(–accent); border: none; color: #fff; font-family: ‘Syne’, sans-serif; font-size: 13px; font-weight: 700; padding: 12px; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+.btn-save:hover { opacity: 0.85; }
+.btn-cancel { flex: 1; background: transparent; border: 1px solid var(–border); color: var(–muted); font-family: ‘DM Mono’, monospace; font-size: 12px; padding: 12px; border-radius: 8px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+.btn-cancel:hover { border-color: var(–red); color: var(–red); }
+.modal-note { font-size: 10px; color: var(–muted); margin-top: 14px; text-align: center; line-height: 1.7; padding: 10px; background: var(–surface2); border-radius: 6px; }
+
+footer { border-top: 1px solid var(–border); padding: 24px 0; font-size: 10px; color: var(–muted); text-align: center; letter-spacing: 0.08em; line-height: 1.8; }
+</style>
+
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="logo">Personal Portfolio Dashboard</div>
+        <h1><span class="word-inv">INVESTMENT</span> <span class="word-name">Kiriacos</span></h1>
+      </div>
+      <div class="header-right">
+        <div class="last-update">
+          Última actualización: <span id="update-time"><span class="spinner"></span></span><br>
+          Datos vía Yahoo Finance
+        </div>
+        <div class="countdown-wrap">
+          <div class="countdown-ring">
+            <svg width="30" height="30" viewBox="0 0 30 30">
+              <circle class="bg" cx="15" cy="15" r="11"/>
+              <circle class="prog" id="ring-prog" cx="15" cy="15" r="11" stroke-dasharray="69.1" stroke-dashoffset="0"/>
+            </svg>
+            <div class="countdown-num" id="countdown-num">60</div>
+          </div>
+          <span class="countdown-label">próx. refresh</span>
+          <button class="refresh-btn" id="refresh-btn" onclick="triggerRefresh()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            Ahora
+          </button>
+          <span id="refresh-status"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SUMMARY -->
+
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-label">Patrimonio Total</div>
+      <div class="card-value" id="total-value">—</div>
+      <div class="card-sub" id="total-gain">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Retorno Total</div>
+      <div class="card-value" id="total-return-pct">—</div>
+      <div class="card-sub" id="total-cost">Costo base: —</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Mayor Ganancia</div>
+      <div class="card-value pos" id="best-hold">—</div>
+      <div class="card-sub pos" id="best-ret">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Retorno Diario</div>
+      <div class="card-value" id="daily-ret">—</div>
+      <div class="card-sub">del portafolio total</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+
+  <div class="section-title">Composición del Portafolio</div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Distribución por peso</h3>
+      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Retorno Total por ETF</h3>
+      <div class="chart-wrap"><canvas id="returnBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">Crecimiento de Posiciones</div>
+  <div class="growth-card">
+    <h3>Valor actual vs Costo Base (USD)</h3>
+    <div class="growth-wrap"><canvas id="growthChart"></canvas></div>
+  </div>
+
+  <!-- HOLDINGS -->
+
+  <div class="section-title">Posiciones Individuales</div>
+  <div class="holdings-grid" id="holdings-grid"></div>
+</div>
+
+<footer>
+  <div class="container">
+    ⚠️ Solo con fines informativos · No constituye asesoría financiera<br>
+    Datos de Yahoo Finance · Auto-refresh cada 60 segundos
+  </div>
+</footer>
+
+<!-- MODAL -->
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Editar Posición</div>
+        <span class="modal-ticker" id="modal-ticker-label">—</span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre del ETF</label>
+      <input class="form-input" id="edit-name" type="text"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Número de acciones</label>
+        <input class="form-input" id="edit-shares" type="number" step="0.00001"/>
+        <div class="form-hint">Acepta decimales</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Precio promedio ($)</label>
+        <input class="form-input" id="edit-avg" type="number" step="0.01"/>
+        <div class="form-hint">Costo por acción</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor actual ($)</label>
+        <input class="form-input" id="edit-val" type="number" step="0.01"/>
+        <div class="form-hint">Se actualizará en vivo</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Retorno diario (%)</label>
+        <input class="form-input" id="edit-daily" type="number" step="0.01"/>
+        <div class="form-hint">% cambio del día</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+    <div class="modal-note">
+      💡 Los cambios se aplican inmediatamente.<br>
+      El próximo auto-refresh actualizará los precios desde Yahoo Finance.
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+let holdings = [
+  { ticker:'QQQM', name:'Invesco NASDAQ 100 ETF',          shares:1.65378,  avgCost:247.91, currentVal:483.60, totalReturnPct:17.95, dailyReturnPct:-1.33, allocation:32.94 },
+  { ticker:'SPMO', name:'Invesco S&P 500 Momentum ETF',    shares:2.12085,  avgCost:117.88, currentVal:305.25, totalReturnPct:22.10, dailyReturnPct:-2.43, allocation:20.79 },
+  { ticker:'VTWO', name:'Vanguard Russell 2000 ETF',        shares:2.40805,  avgCost:103.82, currentVal:270.21, totalReturnPct:8.08,  dailyReturnPct:-2.36, allocation:18.40 },
+  { ticker:'SPYM', name:'State Street SPDR S&P 500 ETF',   shares:2.29706,  avgCost:87.07,  currentVal:200.12, totalReturnPct:0.05,  dailyReturnPct:-1.06, allocation:13.63 },
+  { ticker:'VTI',  name:'Vanguard Total Stock Market ETF',  shares:0.29962,  avgCost:333.75, currentVal:108.83, totalReturnPct:8.83,  dailyReturnPct:-1.14, allocation:7.41  },
+  { ticker:'SOXQ', name:'Invesco PHLX Semiconductor ETF',  shares:1.08896,  avgCost:91.83,  currentVal:100.16, totalReturnPct:0.17,  dailyReturnPct:-3.18, allocation:6.82  },
+];
+
+const COLORS = ['#5b8af5','#00e5a0','#f0c040','#ff6b6b','#c084fc','#38bdf8'];
+const TOOLTIP_DEFAULTS = { backgroundColor:'#181c24', titleColor:'#e8eaf0', bodyColor:'#9ca3af', borderColor:'rgba(255,255,255,0.08)', borderWidth:1 };
+let donutChart, barChart, growthChart;
+let editIndex = null;
+
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+function computeSummary() {
+  const totalVal  = holdings.reduce((s,h) => s + h.currentVal, 0);
+  const totalCost = holdings.reduce((s,h) => s + h.avgCost * h.shares, 0);
+  const totalGain = totalVal - totalCost;
+  const retPct    = (totalGain / totalCost) * 100;
+  const best      = [...holdings].sort((a,b) => b.totalReturnPct - a.totalReturnPct)[0];
+  const dailyChg  = holdings.reduce((s,h) => s + (h.currentVal * h.dailyReturnPct / 100), 0);
+
+  document.getElementById('total-value').textContent = '$' + totalVal.toFixed(2);
+  const gainEl = document.getElementById('total-gain');
+  gainEl.textContent = (totalGain>=0?'+':'') + '$' + totalGain.toFixed(2) + ' ganancia total';
+  gainEl.className = 'card-sub ' + (totalGain>=0?'pos':'neg');
+
+  const retEl = document.getElementById('total-return-pct');
+  retEl.textContent = (retPct>=0?'+':'') + retPct.toFixed(2) + '%';
+  retEl.className = 'card-value ' + (retPct>=0?'pos':'neg');
+  document.getElementById('total-cost').textContent = 'Costo base: $' + totalCost.toFixed(2);
+
+  document.getElementById('best-hold').textContent = best.ticker;
+  document.getElementById('best-ret').textContent = '+' + best.totalReturnPct.toFixed(2) + '% retorno total';
+
+  const dailyEl = document.getElementById('daily-ret');
+  dailyEl.textContent = (dailyChg>=0?'+':'') + '$' + dailyChg.toFixed(2);
+  dailyEl.className = 'card-value ' + (dailyChg>=0?'pos':'neg');
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────────────────────
+function buildCharts() {
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: { labels: holdings.map(h=>h.ticker), datasets:[{ data:holdings.map(h=>h.allocation), backgroundColor:COLORS, borderColor:'#0a0c10', borderWidth:3, hoverOffset:8 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{position:'right',labels:{color:'#9ca3af',font:{family:'DM Mono',size:11},padding:12,boxWidth:12}},
+        tooltip:{...TOOLTIP_DEFAULTS, callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`}} } }
+  });
+
+  barChart = new Chart(document.getElementById('returnBar'), {
+    type:'bar',
+    data: { labels:holdings.map(h=>h.ticker), datasets:[{ label:'Retorno Total %', data:holdings.map(h=>h.totalReturnPct), backgroundColor:holdings.map((h,i)=>h.totalReturnPct>=0?COLORS[i]+'cc':'#ff4d6dcc'), borderRadius:6, borderSkipped:false }] },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{...TOOLTIP_DEFAULTS,callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)}%`}}},
+      scales:{ x:{ticks:{color:'#9ca3af',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}}, y:{ticks:{color:'#9ca3af',font:{family:'DM Mono',size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+
+  growthChart = new Chart(document.getElementById('growthChart'), {
+    type:'bar',
+    data: { labels:holdings.map(h=>h.ticker), datasets:[
+      { label:'Costo Base', data:holdings.map(h=>+(h.avgCost*h.shares).toFixed(2)), backgroundColor:'rgba(107,114,128,0.4)', borderColor:'rgba(107,114,128,0.6)', borderWidth:1, borderRadius:4 },
+      { label:'Valor Actual', data:holdings.map(h=>h.currentVal), backgroundColor:COLORS.map(c=>c+'bb'), borderColor:COLORS, borderWidth:1, borderRadius:4 }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9ca3af',font:{family:'DM Mono',size:11},boxWidth:12}}, tooltip:{...TOOLTIP_DEFAULTS,callbacks:{label:ctx=>` ${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`}}},
+      scales:{ x:{ticks:{color:'#9ca3af',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}}, y:{ticks:{color:'#9ca3af',font:{family:'DM Mono',size:10},callback:v=>'$'+v},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+}
+
+function updateCharts() {
+  donutChart.data.datasets[0].data = holdings.map(h=>h.allocation);
+  donutChart.update('none');
+  barChart.data.datasets[0].data = holdings.map(h=>h.totalReturnPct);
+  barChart.data.datasets[0].backgroundColor = holdings.map((h,i)=>h.totalReturnPct>=0?COLORS[i]+'cc':'#ff4d6dcc');
+  barChart.update('none');
+  growthChart.data.datasets[0].data = holdings.map(h=>+(h.avgCost*h.shares).toFixed(2));
+  growthChart.data.datasets[1].data = holdings.map(h=>h.currentVal);
+  growthChart.update('none');
+}
+
+// ─── HOLDINGS ROWS ────────────────────────────────────────────────────────────
+function buildHoldingsGrid() {
+  const grid = document.getElementById('holdings-grid');
+  grid.innerHTML = '';
+  holdings.forEach((h, i) => {
+    const todayAmt = (h.currentVal * h.dailyReturnPct / 100).toFixed(2);
+    const row = document.createElement('div');
+    row.className = 'holding-row fade-in';
+    row.style.animationDelay = (i * 0.06) + 's';
+    row.innerHTML = `
+      <div class="ticker-badge">${h.ticker}</div>
+      <div class="holding-name">${h.name}<small>${h.shares} acciones · avg $${h.avgCost}</small></div>
+      <div class="metric-box">
+        <div class="val" id="val-${i}">$${h.currentVal.toFixed(2)}</div>
+        <div class="lbl">Patrimonio</div>
+      </div>
+      <div class="metric-box">
+        <div class="val ${h.totalReturnPct>=0?'pos':'neg'}" id="ret-${i}">${h.totalReturnPct>=0?'+':''}${h.totalReturnPct.toFixed(2)}%</div>
+        <div class="lbl">Retorno</div>
+      </div>
+      <div class="metric-box">
+        <div class="val ${h.dailyReturnPct>=0?'pos':'neg'}" id="day-${i}">${h.dailyReturnPct>=0?'+':''}$${Math.abs(todayAmt)}</div>
+        <div class="lbl">Hoy</div>
+      </div>
+      <div class="alloc-badge" id="alloc-${i}">${h.allocation}%</div>
+      <button class="edit-btn" onclick="openModal(${i})">✏ Editar</button>
+    `;
+    grid.appendChild(row);
+  });
+}
+
+function updateHoldingRow(i) {
+  const h = holdings[i];
+  const todayAmt = Math.abs(h.currentVal * h.dailyReturnPct / 100).toFixed(2);
+  const valEl   = document.getElementById('val-' + i);
+  const retEl   = document.getElementById('ret-' + i);
+  const dayEl   = document.getElementById('day-' + i);
+  const allocEl = document.getElementById('alloc-' + i);
+  if (valEl)   valEl.textContent = '$' + h.currentVal.toFixed(2);
+  if (retEl)   { retEl.textContent = (h.totalReturnPct>=0?'+':'') + h.totalReturnPct.toFixed(2) + '%'; retEl.className = 'val '+(h.totalReturnPct>=0?'pos':'neg'); }
+  if (dayEl)   { dayEl.textContent = (h.dailyReturnPct>=0?'+':'-') + '$' + todayAmt; dayEl.className = 'val '+(h.dailyReturnPct>=0?'pos':'neg'); }
+  if (allocEl) allocEl.textContent = h.allocation + '%';
+}
+
+// ─── LIVE PRICES ──────────────────────────────────────────────────────────────
+async function fetchPrice(ticker) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxy, { cache:'no-store' });
+    const json = await res.json();
+    const meta = JSON.parse(json.contents).chart.result[0].meta;
+    return { price: meta.regularMarketPrice, changePct: ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100 };
+  } catch { return null; }
+}
+
+async function loadLivePrices() {
+  const btn = document.getElementById('refresh-btn');
+  const status = document.getElementById('refresh-status');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  status.textContent = 'Cargando...';
+  status.className = '';
+
+  let updated = 0;
+  await Promise.all(holdings.map(async (h, i) => {
+    const data = await fetchPrice(h.ticker);
+    if (!data) return;
+    updated++;
+    h.currentVal = +(data.price * h.shares).toFixed(2);
+    const costBase = h.avgCost * h.shares;
+    h.totalReturnPct = +((( h.currentVal - costBase) / costBase) * 100).toFixed(2);
+    h.dailyReturnPct = +data.changePct.toFixed(2);
+  }));
+
+  // recalc allocations
+  const totalVal = holdings.reduce((s,h) => s + h.currentVal, 0);
+  holdings.forEach(h => { h.allocation = +((h.currentVal / totalVal) * 100).toFixed(2); });
+
+  // update UI
+  holdings.forEach((_, i) => updateHoldingRow(i));
+  computeSummary();
+  updateCharts();
+
+  document.getElementById('update-time').textContent = new Date().toLocaleTimeString('es-MX');
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+  status.textContent = updated > 0 ? '✓ Actualizado' : '⚠ Sin datos';
+  status.className = updated > 0 ? 'ok' : 'err';
+  setTimeout(() => { status.textContent = ''; status.className = ''; }, 3500);
+}
+
+// ─── AUTO REFRESH + COUNTDOWN ─────────────────────────────────────────────────
+const TOTAL = 60;
+let countdown = TOTAL;
+const circumference = 69.1;
+const ring = document.getElementById('ring-prog');
+const numEl = document.getElementById('countdown-num');
+
+function tickCountdown() {
+  countdown--;
+  if (countdown <= 0) { countdown = TOTAL; triggerRefresh(); return; }
+  ring.style.strokeDashoffset = circumference * (1 - countdown / TOTAL);
+  numEl.textContent = countdown;
+}
+
+function triggerRefresh() {
+  countdown = TOTAL;
+  ring.style.strokeDashoffset = 0;
+  numEl.textContent = TOTAL;
+  loadLivePrices();
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(i) {
+  editIndex = i;
+  const h = holdings[i];
+  document.getElementById('modal-ticker-label').textContent = h.ticker + ' — ' + h.name;
+  document.getElementById('edit-name').value   = h.name;
+  document.getElementById('edit-shares').value = h.shares;
+  document.getElementById('edit-avg').value    = h.avgCost;
+  document.getElementById('edit-val').value    = h.currentVal;
+  document.getElementById('edit-daily').value  = h.dailyReturnPct;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editIndex = null;
+}
+function saveEdit() {
+  if (editIndex === null) return;
+  const h = holdings[editIndex];
+  h.name           = document.getElementById('edit-name').value   || h.name;
+  h.shares         = parseFloat(document.getElementById('edit-shares').value) || h.shares;
+  h.avgCost        = parseFloat(document.getElementById('edit-avg').value)    || h.avgCost;
+  h.currentVal     = parseFloat(document.getElementById('edit-val').value)    || h.currentVal;
+  h.dailyReturnPct = parseFloat(document.getElementById('edit-daily').value)  ?? h.dailyReturnPct;
+  const costBase   = h.avgCost * h.shares;
+  h.totalReturnPct = +((( h.currentVal - costBase) / costBase) * 100).toFixed(2);
+
+  const totalVal = holdings.reduce((s,hh) => s + hh.currentVal, 0);
+  holdings.forEach(hh => { hh.allocation = +((hh.currentVal / totalVal) * 100).toFixed(2); });
+
+  closeModal();
+  buildHoldingsGrid();
+  computeSummary();
+  updateCharts();
+}
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target.id === 'modal-overlay') closeModal(); });
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+computeSummary();
+buildCharts();
+buildHoldingsGrid();
+loadLivePrices();
+setInterval(tickCountdown, 1000);
+</script>
+
+</body>
+</html>
